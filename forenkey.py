@@ -44,9 +44,23 @@ def screenshotVideodateAndTime():
     screenshot = pyautogui.screenshot()
     filename = os.path.join('C:\\users', os.getlogin(), pyautogui.datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + '.png')
     screenshot.save(filename)
-    clip = moviepy.editor.ImageSequenceClip([filename] * 30, fps=30)
-    clip.write_videofile(os.path.join('C:\\users', os.getlogin(), pyautogui.datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + '.mp4'))
+    clip = moviepy.editor.ImageSequenceClip([filename] * 300, fps=30)
+    auxvideofile = pyautogui.datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + '.mp4'
+    clip.write_videofile(os.path.join('C:\\users', os.getlogin(), auxvideofile ))
+    #llama a una funcion que comrima el vodeo que acabas de guardar
+    compressVideo(os.path.join('C:\\users', os.getlogin(), auxvideofile))
+
+
     return True
+
+def compressVideo(filename):
+    clip = moviepy.editor.VideoFileClip(filename)
+    clip_resized = clip.resize(height=360) # make the height 360px ( According to moviePy documenation The width is then computed so that the width/height ratio is conserved.)
+    clip_resized.write_videofile(filename.replace('.mp4', '_compressed.mp4')) # the width is 720p by default
+
+    return True
+
+
 
 
 def screenshotandvideo():
