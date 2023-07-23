@@ -24,7 +24,20 @@ logs_dir = os.path.join('C:\\users', os.getlogin(), 'logsCCR\\')
 window = tk.Tk()
 window.title("Cadena de custodia")
 window.geometry("600x500")
+# Crear la ventana q muestra hash
+hash_window = tk.Toplevel(window) 
+hash_window.title("Hash")
+hash_window.geometry("400x200")
+# Crear el texto 
+hash_text = tk.Text(hash_window)
+hash_text.pack()
+# Agregar un botón "Salir"
+exit_button = tk.Button(hash_window, text="Salir", command=hash_window.destroy)
+exit_button.pack(side="bottom")
 
+
+# Ocultarla 
+hash_window.withdraw()
 
 
 # nombre de fichero log + DDMMAAHHMMSS.txt
@@ -81,56 +94,6 @@ def keyandmouseLogger():
     print("captura de raton y teclado  iniciado")
     return True
 
-# construir una funcion que reciba como parametro el nombre de una captura de pantalla, y un directorio, y haga un video añadiendo cada captura
-# de pantalla al video, y lo guarde en el directorio con el nombre en formato AAAA-MM-DD-HH-MM-SS.mp4
-
-video_out = cv2.VideoWriter('video_'+socket.gethostname()+'_'+pyautogui.datetime.datetime.now().strftime("%Y%m%d_%H%M%S")+'.avi', 
-                            cv2.VideoWriter_fourcc(*'MJPG'), 5, (1920,1080))
-def videoMaker(filename, directory):
-    import cv2
-    import os
-    from os.path import isfile, join
-    import re
-    import numpy as np
-    import glob
-    import datetime
-    import time
-    from datetime import datetime
-    from datetime import timedelta
-    from datetime import date
-    from datetime import time
-    from datetime import timezone
-    from datetime import tzinfo
-    from datetime import timedelta
-    from datetime import datetime
-    print("videoMaker iniciado")
-    # Directorio donde se encuentran las capturas de pantalla
-    pathIn= directory
-    # Directorio donde se guardara el video
-    pathOut = directory
-    # Nombre del video
-    fps = 5
-    frame_array = []
-    files = [f for f in os.listdir(pathIn) if isfile(join(pathIn, f))]
-    # Ordenar los archivos por fecha de creacion
-    files.sort(key=lambda x: os.path.getmtime(join(pathIn, x)))
-
-    for i in range(len(files)):
-        filename=pathIn +files[i]
-        print(filename)
-        # leer la imagen
-        img = cv2.imread(filename)
-        height, width, layers = img.shape
-        size = (width,height)
-        # insertar la imagen en el array
-        frame_array.append(img)
-    out = cv2.VideoWriter(pathOut + filename + '.avi',cv2.VideoWriter_fourcc(*'MJPG'), fps, size)
-    for i in range(len(frame_array)):
-        # escribir el video
-        out.write(frame_array[i])
-        out.release()
-    print("videoMaker terminado")
-    return True
 
 
 
@@ -155,11 +118,15 @@ def screenshotdateAndTime():
         screenshot = pyautogui.screenshot()
         screenshot.save(ruta_completa)
 
-        img = cv2.imread(ruta_completa) #pudiera ser nombre archivo
+        #img = cv2.imread(ruta_completa) 
+        img = cv2.imread(ruta_completa, cv2.IMREAD_UNCHANGED)
         print(img)
         frame_array.append(img)
 
         video_out.write(frame_array[i])
+        video_out.release() # no se si esto va aqui
+
+
         print("imprime valor de la variable img a ver si es none")
         print("captura de pantalla añadida al video")
 
@@ -170,7 +137,6 @@ def screenshotdateAndTime():
 def start():
     global p1, p2
     print("La aplicación ha iniciado")
-    #keyandmouseLogger()
     
     p1 = Process(target=keyandmouseLogger)
     p2 = Process(target=screenshotdateAndTime)
@@ -188,8 +154,17 @@ def stop():
     global p1,p2, video_out
     if messagebox.askyesno("Terminar", "¿Seguro que quieres salir?"):
         video_out.release()
-        showHash()
+        #showHash()
         print("La aplicación ha terminado")
+          # Mostrar la ventana del hash
+        hash_window.deiconify()  
+
+  # Insertar el hash
+        hash_text.insert(tk.END, "Hash: " + hashcalculado)
+
+  # Center window
+        hash_window.eval('tk::PlaceWindow . center')
+
         # termina proceso de captura de teclado y mouse
         p1.terminate()
         p1.join()
@@ -224,6 +199,79 @@ hashcalculado = "12345784784fjhjhf67890"
 #hash_text = tk.Text(window)
 #hash_text.pack(side="bottom")
 #hash_text.insert(tk.END, "El hash de la carpeta comprimida es: " + hashcalculado)
+
+
+
+def encrypt_and_compress_file(input_file, output_file, password):
+    with py7zr.SevenZipFile(output_file, mode='w', password=password) as z:
+        z.write(input_file)
+    return True
+
+def encrypt_and_compress_folder(input_folder, output_file, password):
+    with py7zr.SevenZipFile(output_file, 'w', password=password) as z:
+        z.writeall(input_folder, '')
+    return True
+
+def encrypt_and_compress(input_path, output_path, password):
+    if os.path.isfile(input_path):
+        encrypt_and_compress_file(input_path, output_path, password)
+    elif os.path.isdir(input_path):
+        encrypt_and_compress_folder(input_path, output_path, password)
+    else:
+        raise ValueError(f'No se puede comprimir el archivo o carpeta {input_path}')
+    
+    return True
+
+def calculate_sha256_hash(file_path):
+    sha256_hash = hashlib.sha256()
+    with open(file_path, "rb") as f:
+        # Leer el archivo por bloques para archivos grandes
+        for byte_block in iter(lambda: f.read(4096), b""):
+            sha256_hash.update(byte_block)
+    return sha256_hash.hexdigest()
+
+
+import zipfile
+import shutil
+
+def comprimir_carpeta(ruta_carpeta, volume_name):
+    # Obtener el puerto o DeviceID donde está insertado el pendrive
+    puerto = ""
+    for port in serial.tools.list_ports.comports():
+        if volume_name in port.description:
+            puerto = port.device
+            break
+
+    # Comprimir la carpeta
+    nombre_archivo_zip = ruta_carpeta + ".zip"
+    with zipfile.ZipFile(nombre_archivo_zip, "w", zipfile.ZIP_DEFLATED) as archivo_zip:
+        for raiz, directorios, archivos in os.walk(ruta_carpeta):
+            for archivo in archivos:
+                archivo_completo = os.path.join(raiz, archivo)
+                archivo_relacionado = os.path.relpath(archivo_completo, ruta_carpeta)
+                archivo_zip.write(archivo_completo, archivo_relacionado)
+
+    # Copiar el archivo zip al pendrive (si existe) y si tiene suficiente espacio de memoria disponible
+    if puerto != "" and shutil.disk_usage(puerto).free > os.path.getsize(nombre_archivo_zip):
+        shutil.copy(nombre_archivo_zip, puerto)
+    else:
+        print("No hay espacio suficiente para copiar el archivo zip al pendrive")
+
+
+
+    # Calcular el sha256 de la carpeta
+    hash_sha256 = hashlib.sha256()
+    with open(nombre_archivo_zip, "rb") as archivo_zip:
+        for bloque in iter(lambda: archivo_zip.read(4096), b""):
+            hash_sha256.update(bloque)
+
+    # Mostrar el resultado por pantalla
+    print(f"El sha256 de la carpeta {ruta_carpeta} es {hash_sha256.hexdigest()}")
+
+    # Eliminar el archivo zip temporal
+    os.remove(nombre_archivo_zip)
+
+
 
 def showHash():
     popup = tk.Toplevel(window)
@@ -260,35 +308,6 @@ window.mainloop()
 
 # genera una funcion que genere un hash sha512 de un archivo de video que reciba como parametro y lo guarde en el archivo log.txt
 
-def hashVideo(filename):
-    filename = os.path.join('C:\\users', os.getlogin(), filename)
-    with open(filename, 'rb') as f:
-        bytes = f.read()
-        readable_hash = hashlib.sha512(bytes).hexdigest();
-        write(readable_hash)
-        logging.log(10,readable_hash)
-        
-    return True
-
-
-
-def compressVideo(filename):
-    clip = moviepy.editor.VideoFileClip(filename)
-    clip_resized = clip.resize(height=360) # make the height 360px ( According to moviePy documenation The width is then computed so that the width/height ratio is conserved.)
-    clip_resized.write_videofile(filename.replace('.mp4', '_compressed.mp4')) # the width is 720p by default
-
-    return True
-
-
-
-def hashCarpeta(filename):
-    filename = os.path.join('C:\\users', os.getlogin(), filename)
-    with open(filename, 'rb') as f:
-        bytes = f.read()
-        readable_hash = hashlib.sha512(bytes).hexdigest();
-        logging.log(10,readable_hash)
-        
-    return True
 
 
 now = pyautogui.datetime.datetime.now()
