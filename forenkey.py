@@ -4,7 +4,7 @@ import os
 import pyautogui
 import moviepy
 import pygetwindow as gw
-
+import numpy
 import os
 import pyautogui
 import moviepy.editor
@@ -12,42 +12,46 @@ import hashlib
 import socket
 import datetime
 import time
-# Importar el módulo tkinter
 import tkinter as tk
 from tkinter import messagebox
 from multiprocessing import Process
+import cv2
 
+#crea directorio para guardar capturas de pantalla
+screenshots_dir = os.path.join('C:\\users', os.getlogin(), 'screenShotsCCR\\')
+logs_dir = os.path.join('C:\\users', os.getlogin(), 'logsCCR\\')
 # Crear la ventana principal
 window = tk.Tk()
 window.title("Cadena de custodia")
 window.geometry("600x500")
 
 
+
 # nombre de fichero log + DDMMAAHHMMSS.txt
 
 
 #crea una carpeta capturasdepantalla en la carpeta del usuario
+
 def createFolder():
     try:
-        os.mkdir('C:\\users\\%s\\screenShots' % os.getlogin())
+        os.mkdir('C:\\users\\%s\\screenShotsCCR' % os.getlogin())
+        os.mkdir('C:\\users\\%s\\logsCCR' % os.getlogin())
     except OSError:
-        print ("Creation of the directory %s failed" % 'C:\\users\\%s\\screenShots' % os.getlogin())
+        print ("Creation of the directory %s failed" % 'C:\\users\\%s\\screenShotsCCR' % os.getlogin())
     else:
-        print ("Successfully created the directory %s " % 'C:\\users\\%s\\screenShots' % os.getlogin())
+        print ("Successfully created the directory %s " % 'C:\\users\\%s\\screenShotsCCR' % os.getlogin())
 
 
 
 createFolder()
 
+
 # Generar nombre para archivo log
 log_filename = 'log_'+ pyautogui.datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + '.txt' 
 
-# Crear carpeta para screenshots
-screenshots_dir = 'C:\\users\\%s\\screenshots' % os.getlogin()
-os.mkdir(screenshots_dir)
 
 # Ruta completa a archivo log
-log_file = os.path.join(screenshots_dir, log_filename)
+log_file = os.path.join(logs_dir, log_filename)
 
 def OnKeyboardEvent(event):
     
@@ -77,15 +81,90 @@ def keyandmouseLogger():
     print("captura de raton y teclado  iniciado")
     return True
 
+# construir una funcion que reciba como parametro el nombre de una captura de pantalla, y un directorio, y haga un video añadiendo cada captura
+# de pantalla al video, y lo guarde en el directorio con el nombre en formato AAAA-MM-DD-HH-MM-SS.mp4
+
+video_out = cv2.VideoWriter('video_'+socket.gethostname()+'_'+pyautogui.datetime.datetime.now().strftime("%Y%m%d_%H%M%S")+'.avi', 
+                            cv2.VideoWriter_fourcc(*'MJPG'), 5, (1920,1080))
+def videoMaker(filename, directory):
+    import cv2
+    import os
+    from os.path import isfile, join
+    import re
+    import numpy as np
+    import glob
+    import datetime
+    import time
+    from datetime import datetime
+    from datetime import timedelta
+    from datetime import date
+    from datetime import time
+    from datetime import timezone
+    from datetime import tzinfo
+    from datetime import timedelta
+    from datetime import datetime
+    print("videoMaker iniciado")
+    # Directorio donde se encuentran las capturas de pantalla
+    pathIn= directory
+    # Directorio donde se guardara el video
+    pathOut = directory
+    # Nombre del video
+    fps = 5
+    frame_array = []
+    files = [f for f in os.listdir(pathIn) if isfile(join(pathIn, f))]
+    # Ordenar los archivos por fecha de creacion
+    files.sort(key=lambda x: os.path.getmtime(join(pathIn, x)))
+
+    for i in range(len(files)):
+        filename=pathIn +files[i]
+        print(filename)
+        # leer la imagen
+        img = cv2.imread(filename)
+        height, width, layers = img.shape
+        size = (width,height)
+        # insertar la imagen en el array
+        frame_array.append(img)
+    out = cv2.VideoWriter(pathOut + filename + '.avi',cv2.VideoWriter_fourcc(*'MJPG'), fps, size)
+    for i in range(len(frame_array)):
+        # escribir el video
+        out.write(frame_array[i])
+        out.release()
+    print("videoMaker terminado")
+    return True
+
+
+
+#videoMaker('videoPru', screenshots_dir)
 
 def screenshotdateAndTime():
     i = 0
+    fps = 5
+    frame_array = []
+    print("screenshotdateAndTime iniciado")
+    screenshots_dir = os.path.join('C:\\users', os.getlogin(), 'screenShotsCCR')
+    video_out = cv2.VideoWriter('video_'+socket.gethostname()+'_'+pyautogui.datetime.datetime.now().strftime("%Y%m%d_%H%M%S")+'.avi', 
+                            cv2.VideoWriter_fourcc(*'MJPG'), 5, (1920,1080))
     print("La captura de pantalla ha iniciado")
-    while True:
+    nombre_video = socket.gethostname() + '_' + pyautogui.datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + '.png'
+    ruta_completa_video = os.path.join(screenshots_dir, nombre_video)
+    while True: 
+        # Generar nombre para captura de pantalla con nombre del host mas fecha y hora
+        nombre_archivo = socket.gethostname() + '_' + pyautogui.datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + '.png'
+       
+        ruta_completa = os.path.join(screenshots_dir, nombre_archivo)
         screenshot = pyautogui.screenshot()
-        screenshot.save('C:\\users\\screenShots\\%s\\%s_%s.png' % (os.getlogin(), socket.gethostname(), datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")))
+        screenshot.save(ruta_completa)
+
+        img = cv2.imread(ruta_completa) #pudiera ser nombre archivo
+        print(img)
+        frame_array.append(img)
+
+        video_out.write(frame_array[i])
+        print("imprime valor de la variable img a ver si es none")
+        print("captura de pantalla añadida al video")
+
         i += 1
-        time.sleep(15)
+        time.sleep(5)
 
 # Crear una función para iniciar la aplicación
 def start():
@@ -106,8 +185,9 @@ def start():
 
 # Crear una función para terminar la aplicación
 def stop():
-    global p1,p2
+    global p1,p2, video_out
     if messagebox.askyesno("Terminar", "¿Seguro que quieres salir?"):
+        video_out.release()
         showHash()
         print("La aplicación ha terminado")
         # termina proceso de captura de teclado y mouse
@@ -119,8 +199,13 @@ def stop():
         p2.join()
         p2 = None
         # esperar a que se cierre el popup de showHash antes de cerrar la ventana
+        #UnhookKeyboard() 
+        #UnhookMouse()
+        print("capturas detenidasAntesdestroy")
         window.after(6000, window.destroy)
+        print("capturas detenidasAfterdestroy")
        # window.destroy()
+    
 
 # Crear un botón para iniciar la aplicación
 start_button = tk.Button(window, text="Iniciar", command=start)
@@ -195,16 +280,6 @@ def compressVideo(filename):
     return True
 
 
-
-
-def screenshotandvideo():
-    screenshot = pyautogui.screenshot()
-    screenshot.save('C:\\users\\%s\\%s.png' % (os.getlogin(), pyautogui.datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")))
-    video = pyautogui.screenshot()
-    video.save('C:\\users\\%s\\%s.mp4' % (os.getlogin(), pyautogui.datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")))
-
-
-    return True
 
 def hashCarpeta(filename):
     filename = os.path.join('C:\\users', os.getlogin(), filename)
