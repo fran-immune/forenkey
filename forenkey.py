@@ -1,4 +1,5 @@
 
+import py7zr
 import pyWinhook, pythoncom, sys, logging
 import os
 import pyautogui
@@ -16,12 +17,18 @@ import tkinter as tk
 from tkinter import messagebox
 from multiprocessing import Process
 import cv2
+import serial
+import serial.tools.list_ports
 
 #crea directorio para guardar capturas de pantalla
-screenshots_dir = os.path.join('C:\\users', os.getlogin(), 'screenShotsCCR\\')
-logs_dir = os.path.join('C:\\users', os.getlogin(), 'logsCCR\\')
+screenshots_dir = os.path.join('C:\\users', os.getlogin(), '4rensics\\screenShotsCCR\\')
+logs_dir = os.path.join('C:\\users', os.getlogin(), '4rensics\\logsCCR\\')
+compress_dir= os.path.join('C:\\users', os.getlogin(), '4rensics\\compressCCR\\')
+video_dir= os.path.join('C:\\users', os.getlogin(), '4rensics\\videoCCR\\')
+
 # Crear la ventana principal
 window = tk.Tk()
+
 window.title("Cadena de custodia")
 window.geometry("600x500")
 # Crear la ventana q muestra hash
@@ -49,10 +56,12 @@ def createFolder():
     try:
         os.mkdir('C:\\users\\%s\\screenShotsCCR' % os.getlogin())
         os.mkdir('C:\\users\\%s\\logsCCR' % os.getlogin())
+        os.mkdir('C:\\users\\%s\\compressCCR' % os.getlogin())
+        os.mkdir('C:\\users\\%s\\videoCCR' % os.getlogin())
     except OSError:
-        print ("Creation of the directory %s failed" % 'C:\\users\\%s\\screenShotsCCR' % os.getlogin())
+        pass
     else:
-        print ("Successfully created the directory %s " % 'C:\\users\\%s\\screenShotsCCR' % os.getlogin())
+        print ("Successfully created the directories %s " % 'C:\\users\\%s\\screenShotsCCR' % os.getlogin())
 
 
 
@@ -105,11 +114,13 @@ def screenshotdateAndTime():
     frame_array = []
     print("screenshotdateAndTime iniciado")
     screenshots_dir = os.path.join('C:\\users', os.getlogin(), 'screenShotsCCR')
-    video_out = cv2.VideoWriter('video_'+socket.gethostname()+'_'+pyautogui.datetime.datetime.now().strftime("%Y%m%d_%H%M%S")+'.avi', 
+    video_name = 'video_'+socket.gethostname()+'_'+pyautogui.datetime.datetime.now().strftime("%Y%m%d_%H%M%S")+'.avi'
+    ruta_completa_video = os.path.join(video_dir, video_name)
+    video_out = cv2.VideoWriter(ruta_completa_video, 
                             cv2.VideoWriter_fourcc(*'MJPG'), 5, (1920,1080))
     print("La captura de pantalla ha iniciado")
-    nombre_video = socket.gethostname() + '_' + pyautogui.datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + '.png'
-    ruta_completa_video = os.path.join(screenshots_dir, nombre_video)
+    #nombre_video = socket.gethostname() + '_' + pyautogui.datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + '.png'
+    
     while True: 
         # Generar nombre para captura de pantalla con nombre del host mas fecha y hora
         nombre_archivo = socket.gethostname() + '_' + pyautogui.datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + '.png'
@@ -143,9 +154,9 @@ def start():
 
     try:
         p1.start()
-        print("Iniciando proceso 1")
+        print("Iniciando proceso keyandmouseLogger")
         p2.start()
-        print("Iniciando proceso 2")
+        print("Iniciando proceso screenshotdateAndTime")
     except Exception as e:
         print("Error iniciando procesos:", e)
 
@@ -154,7 +165,10 @@ def stop():
     global p1,p2, video_out
     if messagebox.askyesno("Terminar", "¿Seguro que quieres salir?"):
         video_out.release()
-        #showHash()
+        
+        
+        hashcalculado = calculate_sha256_hash(video_dir)
+        showHash()
         print("La aplicación ha terminado")
           # Mostrar la ventana del hash
         hash_window.deiconify()  
@@ -194,7 +208,6 @@ stop_button.place(x=290, y=50)
 #stop_button.pack()
 
 
-hashcalculado = "12345784784fjhjhf67890"
 
 #hash_text = tk.Text(window)
 #hash_text.pack(side="bottom")
@@ -271,7 +284,8 @@ def comprimir_carpeta(ruta_carpeta, volume_name):
     # Eliminar el archivo zip temporal
     os.remove(nombre_archivo_zip)
 
-
+#hashcalculado = calculate_sha256_hash(log_file)
+hashcalculado = 334444447444422446
 
 def showHash():
     popup = tk.Toplevel(window)
@@ -290,30 +304,8 @@ def showHash():
 window.mainloop()
 
 
-# Añade una func que guarde capturas de pantallas cada 30 segundos durante 10 minutos y guardelas en la carpeta del usuario con el nombre en formato AAAA-MM-DD-HH-MM-SS.png, tambien debe almacenar cada minuto durante 10 minutos el nombre de la ventana activa en el mismo archivo log.txt y un video de 15 segundos de lo que se esta haciendo en el computador en el mismo directorio con el nombre en formato AAAA-MM-DD-HH-MM-SS.mp4, para capturar el video usa la libreria moviepy 1.0.3 y para capturar la ventana activa usa la libreria pygetwindow 0.0.9
+#now = pyautogui.datetime.datetime.now()
 
-
-
-
-
-#video.save('C:\\users\\%s\\%s.mp4' % (os.getlogin(), pyautogui.datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")))
-
-
-#Muy util
-# crea una intergfaz grafica con dos botones iniciar y terminar, cuando se presione iniciar debe comenzar a capturar las capturas de pantalla y el video, cuando se presione terminar debe detener la captura de capturas de pantalla y el video, y debe mostrar un mensaje de que la captura de capturas de pantalla y el video ha terminado, y debe mostrar un boton que diga ver capturas de pantalla y video, cuando se presione debe abrir la carpeta del usuario donde se guardaron las capturas de pantalla y el video
-
-
-    
-
-
-# genera una funcion que genere un hash sha512 de un archivo de video que reciba como parametro y lo guarde en el archivo log.txt
-
-
-
-now = pyautogui.datetime.datetime.now()
-# 10 minutos = 600 segundos
-# 30 segundos = 30 segundos
-# 20 capturas de pantalla
 
 
 
