@@ -12,8 +12,11 @@ import pyautogui
 import socket, cv2
 import numpy as np
 import pyautogui
-#import root
+import shutil
 from multiprocessing import Process, Queue
+import shutil
+import wmi
+
 
 #crea directorios
 screenshots_dir = os.path.join('C:\\users', os.getlogin(), '4rensics\\screenShotsCCR\\')
@@ -138,6 +141,36 @@ def calculate_sha256_hash(url):
 
 
 
+#Guardar carpeta comprimida en H: si es que existe y tiene espacio suficiente
+def saveCompressedFolder(url):
+
+  destination_path = ""
+
+  if os.path.exists("H:"):
+    free_space = shutil.disk_usage("H:").free
+    if free_space > os.path.getsize(url):
+        destination_path = os.path.join("H:", os.path.basename(url))  
+        shutil.copy(url, destination_path)
+    else:
+        print("No se pudo guardar en H:") 
+    return destination_path
+
+#funcion que recibe como parametro el SerialNumber de un USB y retorna el puerto donde está conectado
+def get_USB_port(SerialNumber):
+  c = wmi.WMI()
+  for disk in c.Win32_DiskDrive():
+    for partition in disk.associators("Win32_DiskDriveToDiskPartition"):
+      for logical_disk in partition.associators("Win32_LogicalDiskToPartition"):
+        if logical_disk.VolumeSerialNumber == volume_serial:
+          port = logical_disk.DeviceID
+          return port.split("\\")[-1]
+
+volume_serial = "76FBBFE3" #  número de serie USB
+port = get_USB_port(volume_serial)
+print("el puerto del USB es " + port)
+   
+   
+
 
 
 # Crear una función para iniciar la aplicación
@@ -179,7 +212,9 @@ def stop():
         print(rutacomprimida)
         hashcalculado = calculate_sha256_hash(rutacomprimida)
         print("El hash de la carpeta comprimida es:" + hashcalculado)
-        showHashandRuta(hashcalculado,rutacomprimida)
+        rutaUSB = saveCompressedFolder(rutacomprimida)
+        showHashandRuta(hashcalculado,rutaUSB)
+        
         return
 
 
