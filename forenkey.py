@@ -54,10 +54,10 @@ hash_window.withdraw()
 
 def createFolder():
     try:
-        os.mkdir('C:\\users\\%s\\screenShotsCCR' % os.getlogin())
-        os.mkdir('C:\\users\\%s\\logsCCR' % os.getlogin())
-        os.mkdir('C:\\users\\%s\\compressCCR' % os.getlogin())
-        os.mkdir('C:\\users\\%s\\videoCCR' % os.getlogin())
+        os.mkdir('C:\\users\\%s\\4rensics\\screenShotsCCR' % os.getlogin())
+        os.mkdir('C:\\users\\%s\\4rensics\\logsCCR' % os.getlogin())
+        os.mkdir('C:\\users\\%s\\4rensics\\compressCCR' % os.getlogin())
+        os.mkdir('C:\\users\\%s\\4rensics\\videoCCR' % os.getlogin())
     except OSError:
         pass
     else:
@@ -143,6 +143,7 @@ def screenshotdateAndTime():
 
         i += 1
         time.sleep(5)
+        return
 
 # Crear una función para iniciar la aplicación
 def start():
