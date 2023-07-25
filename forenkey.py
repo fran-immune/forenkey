@@ -220,12 +220,12 @@ def encrypt_and_compress_file(input_file, output_file, password):
     with py7zr.SevenZipFile(output_file, mode='w', password=password) as z:
         z.write(input_file)
     return True
-
+#comprime y encripta carpeta
 def encrypt_and_compress_folder(input_folder, output_file, password):
     with py7zr.SevenZipFile(output_file, 'w', password=password) as z:
         z.writeall(input_folder, '')
     return True
-
+#comprime y encripta
 def encrypt_and_compress(input_path, output_path, password):
     if os.path.isfile(input_path):
         encrypt_and_compress_file(input_path, output_path, password)
@@ -235,7 +235,7 @@ def encrypt_and_compress(input_path, output_path, password):
         raise ValueError(f'No se puede comprimir el archivo o carpeta {input_path}')
     
     return True
-
+#calcular hash de la carpeta comprimida
 def calculate_sha256_hash(file_path):
     sha256_hash = hashlib.sha256()
     with open(file_path, "rb") as f:

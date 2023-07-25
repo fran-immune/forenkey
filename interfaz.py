@@ -16,32 +16,19 @@ import shutil
 from multiprocessing import Process, Queue
 import shutil
 import wmi
+import logging
 
 volume_serial = "76FBBFE3" #  número de serie USB
 
 ROOT = 'C:\\users' #ruta raiz para crear directorios
-#crea directorios
-screenshots_dir = os.path.join(ROOT, os.getlogin(), '4rensics\\screenShotsCCR\\')
-logs_dir = os.path.join(ROOT, os.getlogin(), '4rensics\\logsCCR\\')
-compress_dir= os.path.join(ROOT, os.getlogin(), '4rensics\\compressCCR\\')
-video_dir= os.path.join(ROOT, os.getlogin(), '4rensics\\videoCCR\\')
 
+user= os.getlogin()
 
-#crea carpetas para guardar capturas de pantalla
-def create_folder():
-    try:
-        os.mkdir('C:\\users\\%s\\4rensics\\screenShotsCCR' % os.getlogin())
-        os.mkdir('C:\\users\\%s\\4rensics\\logsCCR' % os.getlogin())
-        os.mkdir('C:\\users\\%s\\4rensics\\compressCCR' % os.getlogin())
-        os.mkdir('C:\\users\\%s\\4rensics\\videoCCR' % os.getlogin())
-    except OSError:
-        pass
-    else:
-        print ("Successfully created the directories %s " % 'C:\\users\\%s\\screenShotsCCR' % os.getlogin())
-    
+logging.basicConfig(level=logging.DEBUG, format='%(message)s')
 
-
-create_folder()
+# Obtener loggers
+global keyboard_logger 
+global mouse_logger
 
 #funcion que recibe como parametro el SerialNumber de un USB y retorna el puerto donde está conectado
 def get_USB_port(volume_serial):
@@ -53,33 +40,83 @@ def get_USB_port(volume_serial):
           port = logical_disk.DeviceID
           return port.split("\\")[-1]
 
-
+#obtener puerto del USB
 port = get_USB_port(volume_serial)
-print("el puerto del USB es " + port)
+host = socket.gethostname()
+ROOT_USB = port + ':\\'
+
+#directorios
+screenshots_dir = os.path.join(ROOT, os.getlogin(), '4rensics\\screenShotsCCR\\')
+keyboard_dir = os.path.join(ROOT, os.getlogin(), '4rensics\\keyboardCCR\\')
+keyboardusb_dir = os.path.join(ROOT_USB, os.getlogin(), '4ensics\\keyboardCCR\\')
+mouse_dir = os.path.join(ROOT, os.getlogin(), '4rensics\\mouseCCR\\')
+# logs_mouseusb = os.path.join(ROOT_USB, os.getlogin(), '4ensics\\mouseCCR\\')
+compress_dir= os.path.join(ROOT, os.getlogin(), '4rensics\\compressCCR\\')
+video_dir= os.path.join(ROOT, os.getlogin(), '4rensics\\videoCCR\\')
 
 # Generar nombre para archivo log
-log_filename = 'log_'+ pyautogui.datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + '.txt' 
-
+log_keyboard_file = 'log_keyboard'+ pyautogui.datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + '.txt' 
+log_mouse_file = 'log_mouse'+ pyautogui.datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + '.txt' 
 
 # Ruta completa a archivo log
-log_file = os.path.join(logs_dir, log_filename)
+log_keyboard_ruta = os.path.join(keyboard_dir, log_keyboard_file)
+#log_mouse_ruta = os.path.join(mouse_dir, log_mouse_file)
+#log_mouse_ruta= os.path.join("ROOT_USB", user, '4ensics\\logs_mouseCCR\\log_mouse.txt')
+
+log_mouse_ruta = os.path.join("H","4ensics", "logs_mouseCCR", log_mouse_file)
+print("laruta del log del mouse es: " + log_mouse_ruta)
+
+keyboard_logger = logging.getLogger('keyboard')
+keyboard_logger.setLevel(logging.DEBUG)
+keyboard_logger.addHandler(logging.FileHandler(log_keyboard_ruta, mode='w', encoding='utf-8'))
+
+mouse_logger = logging.getLogger('mouse')
+mouse_logger.setLevel(logging.DEBUG) 
+#mouse_logger.addHandler(logging.FileHandler(log_mouse_ruta))
+mouse_logger.addHandler(logging.FileHandler("h:\\4ensics\\logs_mouseCCR\\log_mouse.txt"))
+
+
+
+
+
+
+
+#crea carpetas para guardar capturas de pantalla
+def create_folder():
+    try:
+        os.mkdir('H:\\%s\\4ensics\\logs_mouseCCR' % os.getlogin() )
+        os.mkdir(keyboardusb_dir )
+    
+        
+    except OSError:
+        pass
+    else:
+        print ("Successfully created the directories %s " % 'C:\\users\\%s\\screenShotsCCR' % os.getlogin())
+    
+
+
+create_folder()
+
+print("el puerto del USB es " + port)
+
 
 
 # captura eventos de teclado 
 def onkeyboard_event(event):
-    
-    logging.basicConfig(filename=f'{log_file}', level=logging.DEBUG, format='%(message)s')
-    chr(event.Ascii)
-    logging.log(10,chr(event.Ascii))
+    current_time = datetime.datetime.now()
+    #chr(event.Ascii)
+    log_messageK= f"{user} : {host} :{current_time} {event.Key} {event.Ascii} {event.ScanCode} {event.MessageName}"
+    keyboard_logger.log(10, log_messageK)
     return True
+
+
 
 # captura eventos de raton
 def onmouse_event(event):
-    #print('Click en ({}, {})'.format(event.Position[0], event.Position[1]))
     current_time = datetime.datetime.now()
-    logging.basicConfig(filename=f'{log_file}', level=logging.DEBUG, format='%(message)s')
-    log_message = f"Click en ({event.Position[0]}, {event.Position[1]}) en {current_time}"
-    logging.log(10,log_message)
+    
+    log_messageM = f"{user} : {host} : {current_time} Click en ({event.Position[0]}, {event.Position[1]})"
+    mouse_logger.log(10, log_messageM)
     
     return True
 
@@ -91,7 +128,6 @@ def keyandmouse_logger(queue):
     hooks_manager.HookKeyboard()
     hooks_manager.HookMouse()
     pythoncom.PumpMessages()
-    print("captura de raton y teclado  iniciado")
     return True
 
 def screenshot_date_and_time(queue):
@@ -100,7 +136,7 @@ def screenshot_date_and_time(queue):
     frame_array = []
     print("screenshotdateAndTime iniciado")
     #screenshots_dir = os.path.join('C:\\users', os.getlogin(), '4rensics\\screenShotsCCR')
-    video_name = 'video_'+socket.gethostname()+'_'+pyautogui.datetime.datetime.now().strftime("%Y%m%d_%H%M%S")+'.avi'
+    video_name = 'video_'+host+'_'+pyautogui.datetime.datetime.now().strftime("%Y%m%d_%H%M%S")+'.avi'
     ruta_completa_video = os.path.join(video_dir, video_name)
 
     #Configuración de VideoWriter
@@ -139,11 +175,11 @@ def compress_folder(url):
     ruta_completa = os.path.join(compress_dir, nombre_archivo)
     print("la ruta de la carpeta comprimida es: " + ruta_completa)
     with py7zr.SevenZipFile(ruta_completa, 'w') as archive:
-        archive.writeall(url, r'C:\Users\User\4rensics\compressCCR')
+        archive.writeall(url, 'compressCCR')
     print("Carpeta comprimida")
     return ruta_completa
 
-print(compress_folder(r"C:\Users\USER\4rensics\videoCCR"))
+
 
 # Calcular hash 256 de archivo comprimido
 def calculate_sha256_hash(url):
@@ -195,8 +231,8 @@ def encrypt_folder(url, password):
 def start():
     global p1, p2
     print("La aplicación ha iniciado")
-
-
+    status_label.config(text="Capturas iniciadas") 
+    start_button["state"] = "disabled"
     try:
         p1.start()
         print("Iniciando proceso keyandmouseLogger")
@@ -210,11 +246,9 @@ def start():
 def stop():
     global p1, p2
     if messagebox.askyesno("Terminar", "¿Seguro que quieres salir?"):
-        
-
-        
         print("La aplicación ha terminado")
-
+        start_button["state"] = "normal"
+        status_label.config(text="")
         # termina proceso de captura de teclado y mouse
         if p1:
             p1.terminate()
@@ -226,17 +260,16 @@ def stop():
         p1.join()
         p2.join()
         print("La ruta de la carpeta comprimida es:")
-        rutacomprimida =compress_folder(r"C:\Users\USER\4rensics\videoCCR")
+        #rutacomprimida =compress_folder(r"C:\Users\USER\4rensics\videoCCR")
+        rutacomprimida=r"C:\Users\USER\4rensics\videoCCR"
         print(rutacomprimida)
         hashcalculado = calculate_sha256_hash(rutacomprimida)
         print("El hash de la carpeta comprimida es:" + hashcalculado)
         ruta_usb = save_compressedfolder(rutacomprimida)
         showHashandRuta(hashcalculado,ruta_usb)
-        
-        
+        encrypt_folder(rutacomprimida, "1234")
 
-
-#agrega boton salir
+# Crear una función para mostrar el hash y la ruta de la carpeta comprimida
 def showHashandRuta(hashcalculado,ruta):
 
 
@@ -254,16 +287,13 @@ def showHashandRuta(hashcalculado,ruta):
   # Mostrar ruta de la carpeta que contiene el archivo comprimido
   hash_text.insert(tk.END, "la ruta de la carpeta comprimida es: " + ruta)
 
-
     # Crear botón de salir en la ventana principal
   exit_button = tk.Button(window, text="Salir", command=lambda: window.destroy())
   exit_button.pack(side="bottom")
   exit_button.pack(side="bottom", anchor="center", pady=(0, 20))
 
 
-
-
-
+#main
 if __name__ == "__main__":
 
     # Crear la ventana principal de la interfaz
@@ -271,7 +301,13 @@ if __name__ == "__main__":
     window.title("Cadena de custodia")
     window.geometry("600x500")
 
+    #Indiador de estado
+    status_label = tk.Label(window, text="")
+    status_label.pack(side="bottom")
+
     queue = Queue()
+
+
 
     p1 = Process(target=keyandmouse_logger, args=(queue,))
     p2 = Process(target=screenshot_date_and_time, args=(queue,))
