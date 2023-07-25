@@ -43,28 +43,27 @@ def get_USB_port(volume_serial):
 #obtener puerto del USB
 port = get_USB_port(volume_serial)
 host = socket.gethostname()
-ROOT_USB = port + ':\\'
+ROOT_USB = os.path.join(port,'//')
+print("el puerto del USB es " + port)
+
+print("root_usb es " + ROOT_USB)
 
 #directorios
-screenshots_dir = os.path.join(ROOT, os.getlogin(), '4rensics\\screenShotsCCR\\')
-keyboard_dir = os.path.join(ROOT, os.getlogin(), '4rensics\\keyboardCCR\\')
-keyboardusb_dir = os.path.join(ROOT_USB, os.getlogin(), '4ensics\\keyboardCCR\\')
-mouse_dir = os.path.join(ROOT, os.getlogin(), '4rensics\\mouseCCR\\')
-# logs_mouseusb = os.path.join(ROOT_USB, os.getlogin(), '4ensics\\mouseCCR\\')
-compress_dir= os.path.join(ROOT, os.getlogin(), '4rensics\\compressCCR\\')
-video_dir= os.path.join(ROOT, os.getlogin(), '4rensics\\videoCCR\\')
+
+
+
 
 # Generar nombre para archivo log
 log_keyboard_file = 'log_keyboard'+ pyautogui.datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + '.txt' 
 log_mouse_file = 'log_mouse'+ pyautogui.datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + '.txt' 
 
-# Ruta completa a archivo log
-log_keyboard_ruta = os.path.join(keyboard_dir, log_keyboard_file)
-#log_mouse_ruta = os.path.join(mouse_dir, log_mouse_file)
-#log_mouse_ruta= os.path.join("ROOT_USB", user, '4ensics\\logs_mouseCCR\\log_mouse.txt')
 
-log_mouse_ruta = os.path.join("H","4ensics", "logs_mouseCCR", log_mouse_file)
+log_keyboard_ruta = os.path.join(ROOT_USB,"/4ensics/keyboardCCR/", log_keyboard_file)
+log_mouse_ruta = os.path.join(ROOT_USB,"/4ensics/logs_mouseCCR/", log_mouse_file)  
 print("laruta del log del mouse es: " + log_mouse_ruta)
+compress_dir= os.path.join(ROOT_USB, '/4ensics/compressCCR/')
+video_dir= os.path.join(ROOT_USB, '/4ensics/videoCCR/')
+print("la ruta del video es: " + video_dir)
 
 keyboard_logger = logging.getLogger('keyboard')
 keyboard_logger.setLevel(logging.DEBUG)
@@ -72,11 +71,7 @@ keyboard_logger.addHandler(logging.FileHandler(log_keyboard_ruta, mode='w', enco
 
 mouse_logger = logging.getLogger('mouse')
 mouse_logger.setLevel(logging.DEBUG) 
-#mouse_logger.addHandler(logging.FileHandler(log_mouse_ruta))
-mouse_logger.addHandler(logging.FileHandler("h:\\4ensics\\logs_mouseCCR\\log_mouse.txt"))
-
-
-
+mouse_logger.addHandler(logging.FileHandler(log_mouse_ruta))
 
 
 
@@ -84,14 +79,16 @@ mouse_logger.addHandler(logging.FileHandler("h:\\4ensics\\logs_mouseCCR\\log_mou
 #crea carpetas para guardar capturas de pantalla
 def create_folder():
     try:
-        os.mkdir('H:\\%s\\4ensics\\logs_mouseCCR' % os.getlogin() )
-        os.mkdir(keyboardusb_dir )
-    
+        os.mkdir('H:/4ensics/logs_mouseCCR')
+        os.mkdir('H:/4ensics/videoCCR' )
+        os.mkdir('H:/4ensics/keyboardCCR')
+        os.mkdir('H:/4ensics/compressCCR')
+        
         
     except OSError:
         pass
     else:
-        print ("Successfully created the directories %s " % 'C:\\users\\%s\\screenShotsCCR' % os.getlogin())
+        print ("Successfully created the directories en el puerto USB")
     
 
 
@@ -105,7 +102,7 @@ print("el puerto del USB es " + port)
 def onkeyboard_event(event):
     current_time = datetime.datetime.now()
     #chr(event.Ascii)
-    log_messageK= f"{user} : {host} :{current_time} {event.Key} {event.Ascii} {event.ScanCode} {event.MessageName}"
+    log_messageK= f"{user} : {host} :{current_time} {event.Key} Ascii: {event.Ascii}  "
     keyboard_logger.log(10, log_messageK)
     return True
 
@@ -142,13 +139,14 @@ def screenshot_date_and_time(queue):
     #Configuración de VideoWriter
     video_out = cv2.VideoWriter(ruta_completa_video, cv2.VideoWriter_fourcc(*'MJPG'), fps, (1920,1080))
     print("La captura de pantalla ha iniciado")
-    
+    print("la ruta completa del video es: " + ruta_completa_video)
     
     while True:  # finalizar = False
         # Generar nombre para captura de pantalla con nombre del host mas fecha y hora
         nombre_screenshot = socket.gethostname() + '_' + pyautogui.datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + '.png'
        
-        ruta_completa = os.path.join(screenshots_dir, nombre_screenshot)
+        #ruta_completa = os.path.join(screenshots_dir, nombre_screenshot)
+        ruta_completa = os.path.join('H:\\4ensics\\screenShotsCCR', nombre_screenshot)
         screenshot = pyautogui.screenshot()
         screenshot.save(ruta_completa)
         print("la ruta de la captura de pantalla es: " + ruta_completa)
@@ -163,7 +161,10 @@ def screenshot_date_and_time(queue):
 
         i += 1
         time.sleep(5)
-    video_out.release() # prueba para ver si se puede cerrar el video y abrirlo de nuevo
+    #
+    # 
+    # 
+    # video_out.release() # prueba para ver si se puede cerrar el video y abrirlo de nuevo
         
 
 # Comprimir carpeta con capturas de pantalla, log y video
@@ -193,23 +194,6 @@ def calculate_sha256_hash(url):
         return sha256_hash.hexdigest()
 
 
-
-#Guardar carpeta comprimida en el puerto donde está conectado el USB, si está conectado y tiene espacio suficiente
-def save_compressedfolder(url):
-
-  destination_path = ""
-
-  if os.path.exists(port):
-    free_space = shutil.disk_usage(port).free
-    if free_space > os.path.getsize(url):
-        destination_path = os.path.join(port, os.path.basename(url))  
-        shutil.copy(url, destination_path)
-    else:
-        print("No se pudo guardar en USB, no hay espacio suficiente") 
-    return destination_path
-
-
-   
 #Funcion de encriptacion con py7zr,  recibe 2 parametros: una carpeta comprimida, y la contraseña
 # 
 def encrypt_folder(url, password):
@@ -260,14 +244,14 @@ def stop():
         p1.join()
         p2.join()
         print("La ruta de la carpeta comprimida es:")
-        #rutacomprimida =compress_folder(r"C:\Users\USER\4rensics\videoCCR")
-        rutacomprimida=r"C:\Users\USER\4rensics\videoCCR"
+        rutacomprimida =compress_folder("H:/4ensics/videoCCR")
+        
         print(rutacomprimida)
         hashcalculado = calculate_sha256_hash(rutacomprimida)
         print("El hash de la carpeta comprimida es:" + hashcalculado)
-        ruta_usb = save_compressedfolder(rutacomprimida)
-        showHashandRuta(hashcalculado,ruta_usb)
-        encrypt_folder(rutacomprimida, "1234")
+        
+        showHashandRuta(hashcalculado,rutacomprimida)
+        #encrypt_folder(rutacomprimida, "1234")
 
 # Crear una función para mostrar el hash y la ruta de la carpeta comprimida
 def showHashandRuta(hashcalculado,ruta):
