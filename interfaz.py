@@ -168,14 +168,14 @@ def screenshot_date_and_time(queue):
         
 
 # Comprimir carpeta con capturas de pantalla, log y video
-def compress_folder(url):
+def compress_folder(url,password):
     print("Comprimiendo carpeta")
     print("la url de la carpeta a comprimir es: " + url)
     # Generar nombre para archivo comprimido con nombre del host mas fecha y hora
     nombre_archivo = socket.gethostname() + '_' + pyautogui.datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + '.7z'
     ruta_completa = os.path.join(compress_dir, nombre_archivo)
     print("la ruta de la carpeta comprimida es: " + ruta_completa)
-    with py7zr.SevenZipFile(ruta_completa, 'w') as archive:
+    with py7zr.SevenZipFile(ruta_completa, 'w',password=password) as archive:
         archive.writeall(url, 'compressCCR')
     print("Carpeta comprimida")
     return ruta_completa
@@ -193,21 +193,6 @@ def calculate_sha256_hash(url):
         print(sha256_hash.hexdigest())
         return sha256_hash.hexdigest()
 
-
-#Funcion de encriptacion con py7zr,  recibe 2 parametros: una carpeta comprimida, y la contraseña
-# 
-def encrypt_folder(url, password):
-    print("Encriptando carpeta")
-    print("la url de la carpeta a encriptar es: " + url)
-    # Generar nombre para archivo comprimido con nombre del host mas fecha y hora
-    nombre_archivo = socket.gethostname() + '_' + pyautogui.datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + '.7z'
-    ruta_completa = os.path.join(compress_dir, nombre_archivo)
-    print("la ruta de la carpeta encriptada es: " + ruta_completa)
-    with py7zr.SevenZipFile(ruta_completa, 'w', password=password) as archive:
-        archive.writeall(url, r'C:\Users\User\4rensics\compressCCR')
-    print("Carpeta encriptada")
-    return ruta_completa
- 
 
 
 
@@ -244,7 +229,7 @@ def stop():
         p1.join()
         p2.join()
         print("La ruta de la carpeta comprimida es:")
-        rutacomprimida =compress_folder("H:/4ensics/videoCCR")
+        rutacomprimida =compress_folder("H:/4ensics/videoCCR", "1234")
         
         print(rutacomprimida)
         hashcalculado = calculate_sha256_hash(rutacomprimida)
@@ -285,6 +270,19 @@ if __name__ == "__main__":
     window.title("Cadena de custodia")
     window.geometry("600x500")
 
+    disk_usage = shutil.disk_usage(ROOT_USB)
+    espacio_libre = disk_usage.free
+
+    # Verificar que haya suficiente espacio libre en el USB
+    if espacio_libre < 1024:
+    
+        lbl_error = tk.Label(window, text="No hay suficiente espacio libre")
+        lbl_error.pack()
+    
+        btn_ok = tk.Button(window, text="OK", command=window.destroy)
+        btn_ok.pack()
+        sys.exit()
+    
     #Indiador de estado
     status_label = tk.Label(window, text="")
     status_label.pack(side="bottom")
