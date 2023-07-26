@@ -1,7 +1,5 @@
-
-# Importar el módulo tkinter
 import tkinter as tk
-from tkinter import messagebox
+
 import os
 import hashlib
 import time
@@ -13,10 +11,11 @@ import socket, cv2
 import numpy as np
 import pyautogui
 import shutil
-from multiprocessing import Process, Queue
 import shutil
 import wmi
 import logging
+from multiprocessing import Process, Queue
+from tkinter import messagebox
 
 volume_serial = "76FBBFE3" #  número de serie USB
 
@@ -51,8 +50,6 @@ print("root_usb es " + ROOT_USB)
 #directorios
 
 
-
-
 # Generar nombre para archivo log
 log_keyboard_file = 'log_keyboard'+ pyautogui.datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + '.txt' 
 log_mouse_file = 'log_mouse'+ pyautogui.datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + '.txt' 
@@ -82,21 +79,14 @@ def create_folder():
         os.mkdir('H:/4ensics/logs_mouseCCR')
         os.mkdir('H:/4ensics/videoCCR' )
         os.mkdir('H:/4ensics/keyboardCCR')
-        os.mkdir('H:/4ensics/compressCCR')
-        
-        
+        os.mkdir('H:/4ensics/compressCCR')      
     except OSError:
         pass
     else:
         print ("Successfully created the directories en el puerto USB")
     
 
-
 create_folder()
-
-print("el puerto del USB es " + port)
-
-
 
 # captura eventos de teclado 
 def onkeyboard_event(event):
@@ -106,17 +96,13 @@ def onkeyboard_event(event):
     keyboard_logger.log(10, log_messageK)
     return True
 
-
-
 # captura eventos de raton
 def onmouse_event(event):
-    current_time = datetime.datetime.now()
-    
+    current_time = datetime.datetime.now() 
     log_messageM = f"{user} : {host} : {current_time} Click en ({event.Position[0]}, {event.Position[1]})"
     mouse_logger.log(10, log_messageM)
-    
     return True
-
+# define manejadores de eventos separados para keyboard y mouse
 def keyandmouse_logger(queue):
     # crea un hook manager    
     hooks_manager = pyWinhook.HookManager()
@@ -127,6 +113,7 @@ def keyandmouse_logger(queue):
     pythoncom.PumpMessages()
     return True
 
+# captura de pantalla con fecha y hora y realiza video de las capturas
 def screenshot_date_and_time(queue):
     i = 0
     fps = 5
@@ -141,7 +128,7 @@ def screenshot_date_and_time(queue):
     print("La captura de pantalla ha iniciado")
     print("la ruta completa del video es: " + ruta_completa_video)
     
-    while True:  # finalizar = False
+    while True:  
         # Generar nombre para captura de pantalla con nombre del host mas fecha y hora
         nombre_screenshot = socket.gethostname() + '_' + pyautogui.datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + '.png'
        
@@ -161,11 +148,11 @@ def screenshot_date_and_time(queue):
 
         i += 1
         time.sleep(5)
-    #
-    # 
-    # 
-    # video_out.release() # prueba para ver si se puede cerrar el video y abrirlo de nuevo
-        
+        if queue.qsize() > 0:
+            break
+    video_out.release()
+    print("La captura de pantalla ha terminado")
+    return True
 
 # Comprimir carpeta con capturas de pantalla, log y video
 def compress_folder(url,password):
@@ -180,8 +167,6 @@ def compress_folder(url,password):
     print("Carpeta comprimida")
     return ruta_completa
 
-
-
 # Calcular hash 256 de archivo comprimido
 def calculate_sha256_hash(url):
     print("Calculando hash")
@@ -192,9 +177,6 @@ def calculate_sha256_hash(url):
             sha256_hash.update(byte_block)
         print(sha256_hash.hexdigest())
         return sha256_hash.hexdigest()
-
-
-
 
 # Crear una función para iniciar la aplicación
 def start():
@@ -261,7 +243,6 @@ def showHashandRuta(hashcalculado,ruta):
   exit_button.pack(side="bottom")
   exit_button.pack(side="bottom", anchor="center", pady=(0, 20))
 
-
 #main
 if __name__ == "__main__":
 
@@ -289,8 +270,6 @@ if __name__ == "__main__":
 
     queue = Queue()
 
-
-
     p1 = Process(target=keyandmouse_logger, args=(queue,))
     p2 = Process(target=screenshot_date_and_time, args=(queue,))
 
@@ -298,7 +277,6 @@ if __name__ == "__main__":
     start_button = tk.Button(window, text="Iniciar", command=start)
     #sposicionar el botón en la ventana principal
     start_button.place(x=160, y=50)
-
 
     # Crear un botón para terminar la aplicación
     stop_button = tk.Button(window, text="Terminar", command=stop)
